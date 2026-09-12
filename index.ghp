@@ -1,0 +1,68 @@
+<go:import (
+	"net/http"
+	"strings"
+)/>
+<go
+	var errMsg string
+
+	if r.Method == http.MethodPost {
+		target := strings.TrimSpace(r.FormValue("url"))
+		if target == "" || (!strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://")) {
+			errMsg = "Enter a valid URL starting with http:// or https://"
+		} else {
+			code, err := db.Shorten(r.Context(), target)
+			if err != nil {
+				errMsg = "Could not shorten that URL: " + err.Error()
+			} else {
+				http.Redirect(w, r, "/?created="+code, http.StatusSeeOther)
+				return
+			}
+		}
+	}
+
+	createdCode := r.URL.Query().Get("created")
+
+	links, err := db.Recent(r.Context(), 20)
+	if err != nil && errMsg == "" {
+		errMsg = "Could not load recent links: " + err.Error()
+	}
+/>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GHP URL Shortener</title>
+</head>
+<body>
+  <h1>GHP URL Shortener</h1>
+
+  <form method="POST" action="/">
+    <input type="text" name="url" placeholder="https://example.com/some/long/path" size="50" />
+    <button type="submit">Shorten</button>
+  </form>
+
+  <go:if createdCode != ""/>
+  <p>
+    Short link ready:
+    <a href="/<go= createdCode />">/<go= createdCode /></a>
+  </p>
+  <go:endif/>
+
+  <go:if errMsg != ""/>
+  <p style="color:red;"><go= errMsg /></p>
+  <go:endif/>
+
+  <h2>Recent links</h2>
+  <table border="1" cellpadding="6">
+    <tr><th>Code</th><th>Target</th><th>Clicks</th></tr>
+    <go:for _, l := range links/>
+    <tr>
+      <td><a href="/<go= l.Code />"><go= l.Code /></a></td>
+      <td><go= l.TargetURL /></td>
+      <td><go= l.Clicks /></td>
+    </tr>
+    <go:endfor/>
+  </table>
+</body>
+</html>

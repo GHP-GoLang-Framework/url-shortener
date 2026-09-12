@@ -1,0 +1,16 @@
+<go
+	code := r.PathValue("code")
+
+	target, found, err := db.Resolve(r.Context(), code)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+
+	http.Redirect(w, r, target, http.StatusFound)
+	return
+/>
