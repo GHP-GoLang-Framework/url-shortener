@@ -43,7 +43,7 @@ services:
   tunnel:
     image: cloudflare/cloudflared:latest
     profiles: ["public"]
-    command: tunnel --no-autoupdate --url http://app:8080
+    command: tunnel --no-autoupdate --protocol http2 --url http://app:8080
     depends_on:
       - app
 
