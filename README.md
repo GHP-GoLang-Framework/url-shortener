@@ -18,10 +18,20 @@ A URL shortener built with [GHP](https://github.com/GHP-GoLang-Framework/ghp) �
 ## Running it
 
 ```bash
-docker compose up -d --build
+docker compose up -d            # pulls ghcr.io/ghp-golang-framework/url-shortener
+docker compose up -d --build    # or builds the image locally
 ```
 
-Brings up Postgres (`:5432`), Redis (`:6379`) and the app (`:8080`). The app's Dockerfile builds the `ghp` CLI from the upstream repo and runs `ghp build` against this project — no local GHP checkout needed.
+Brings up Postgres, Redis and the app on `:8080` (override with `APP_PORT`). Postgres and Redis stay on the internal Docker network.
+
+### Public URL
+
+- **Instant, from your machine:** `docker compose --profile public up -d`, then `docker compose logs tunnel | grep trycloudflare.com` prints an HTTPS URL (Cloudflare quick tunnel, no account; lives while the containers run).
+- **Permanent, free:** on [Render](https://render.com), *New → Blueprint* and pick this repository; `render.yaml` creates the web service, Postgres and Key Value (Redis).
+
+### Image
+
+Every push to `main` publishes `ghcr.io/ghp-golang-framework/url-shortener` (`latest`, branch, tag and `sha-*` tags) through `.github/workflows/docker.yml`. The app's Dockerfile builds the `ghp` CLI from the upstream repo and runs `ghp build` against this project — no local GHP checkout needed.
 
 To run it outside Docker:
 
