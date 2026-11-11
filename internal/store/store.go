@@ -80,6 +80,17 @@ func (s *Store) migrate(ctx context.Context) error {
 	return nil
 }
 
+// Ping reports whether both Postgres and Redis answer, for health checks.
+func (s *Store) Ping(ctx context.Context) error {
+	if err := s.pg.Ping(ctx); err != nil {
+		return fmt.Errorf("store: ping postgres: %w", err)
+	}
+	if err := s.cache.Ping(ctx).Err(); err != nil {
+		return fmt.Errorf("store: ping redis: %w", err)
+	}
+	return nil
+}
+
 // Shorten inserts targetURL under a new random code, retrying on collision,
 // and returns the code.
 func (s *Store) Shorten(ctx context.Context, targetURL string) (string, error) {

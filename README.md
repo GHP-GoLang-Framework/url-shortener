@@ -13,9 +13,19 @@ A URL shortener built with [GHP](https://github.com/GHP-GoLang-Framework/ghp) �
 
 - `index.ghp` — `/`: the shorten form (GET) and its submission handler (POST), plus a list of recently created links.
 - `[code].ghp` — `/{code}`: resolves and redirects.
+- `health.ghp` — `/health`: pings Postgres and Redis; `200 {"status":"ok"}` or `503 {"status":"down"}`.
 - `internal/store/store.go` — plain Go: Postgres (`pgxpool`) + Redis (`go-redis`), shared by every page through the package-level `db` var set up in `main.go`.
 
 ## Running it
+
+**One command, everything inside** (app + Postgres + Redis in one container):
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/ghp-golang-framework/url-shortener:all-in-one
+# add -e PUBLIC=1 to also print a public HTTPS URL (Cloudflare quick tunnel)
+```
+
+Or as separate containers with Compose:
 
 ```bash
 docker compose up -d            # pulls ghcr.io/ghp-golang-framework/url-shortener

@@ -6,7 +6,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./docker/Dockerfile
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: ADDR
         value: ":10000"
