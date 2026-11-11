@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: ghp
       POSTGRES_PASSWORD: ghp
       POSTGRES_DB: ghp_shortener
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -17,8 +15,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -26,6 +22,7 @@ services:
       retries: 10
 
   app:
+    image: ghcr.io/ghp-golang-framework/url-shortener:latest
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -34,12 +31,21 @@ services:
       REDIS_ADDR: redis:6379
       ADDR: ":8080"
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  # Public HTTPS URL without an account: `docker compose --profile public up -d`
+  # then `docker compose logs tunnel | grep trycloudflare.com`.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["public"]
+    command: tunnel --no-autoupdate --url http://app:8080
+    depends_on:
+      - app
 
 volumes:
   postgres_data:
