@@ -1,0 +1,33 @@
+# All-in-one image: the GHP app, Postgres and Redis in a single container,
+# for demos where one `docker run` must bring up everything.
+#   docker run --rm -p 8080:8080 ghcr.io/ghp-golang-framework/url-shortener:all-in-one
+#   docker run --rm -p 8080:8080 -e PUBLIC=1 ghcr.io/...:all-in-one   # + public HTTPS URL
+FROM golang:1.27-alpine AS ghp-builder
+ENV CGO_ENABLED=0
+RUN apk add --no-cache git
+WORKDIR /src
+RUN git clone --depth 1 https://github.com/GHP-GoLang-Framework/ghp.git .
+RUN go build -o /usr/local/bin/ghp ./src/cmd
+
+FROM golang:1.27-alpine AS app-builder
+ENV CGO_ENABLED=0
+COPY --from=ghp-builder /usr/local/bin/ghp /usr/local/bin/ghp
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN ghp build . </dev/null
+
+FROM cloudflare/cloudflared:latest AS cloudflared
+
+FROM postgres:16-alpine
+RUN apk add --no-cache redis
+COPY --from=app-builder /app/app /usr/local/bin/url-shortener
+COPY --from=cloudflared /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+COPY docker/allinone-entrypoint.sh /usr/local/bin/allinone-entrypoint.sh
+ENV POSTGRES_USER=ghp POSTGRES_PASSWORD=ghp POSTGRES_DB=ghp_shortener \
+    DATABASE_URL=postgres://ghp:ghp@127.0.0.1:5432/ghp_shortener?sslmode=disable \
+    REDIS_ADDR=127.0.0.1:6379 \
+    ADDR=:8080
+EXPOSE 8080
+ENTRYPOINT ["allinone-entrypoint.sh"]
